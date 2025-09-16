@@ -12,10 +12,9 @@ interface CustomConfig extends Config {
   allowManualOverride?: boolean;
 }
 
-const DEFAULT_MIN_AGE_HOURS = 48;
 const DEFAULT_MIN_WEEKLY_DOWNLOADS = 1000;
 
-export default class QuarantineMiddleware implements IPluginMiddleware<CustomConfig> {
+export default class DaycareMiddleware implements IPluginMiddleware<CustomConfig> {
   private readonly minWeeklyDownloads: number;
   private readonly allowlistPackages: Set<string>;
   private readonly allowManualOverride: boolean;
