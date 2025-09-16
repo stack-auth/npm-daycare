@@ -1,0 +1,26 @@
+storage: /verdaccio/storage
+plugins: /verdaccio/plugins
+
+filters:
+  plugin-quarantine-filter:
+    minAgeHours: 48
+
+# Minimal uplinks and packages to proxy everything
+uplinks:
+  npmjs:
+    url: https://registry.npmjs.org/
+
+packages:
+  '@*/*':
+    access: $all
+    publish: $authenticated
+    proxy: npmjs
+  '**':
+    access: $all
+    publish: $authenticated
+    proxy: npmjs
+
+# server:
+#   keepAliveTimeout: 60
+
+listen: 0.0.0.0:4873
