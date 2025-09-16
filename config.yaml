@@ -5,6 +5,10 @@ filters:
   plugin-daycare-filter:
     minAgeHours: 48
 
+middlewares:
+  plugin-daycare-middleware:
+    minWeeklyDownloads: 5000
+
 # Minimal uplinks and packages to proxy everything
 uplinks:
   npmjs:

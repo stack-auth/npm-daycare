@@ -1,0 +1,17 @@
+{
+  "name": "verdaccio-plugin-daycare-middleware",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc"
+  },
+  "devDependencies": {
+    "@types/node": "^24.3.0",
+    "@verdaccio/types": "^10.8.0",
+    "typescript": "^5.3.3",
+    "@types/express": "^5.0.3"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": ""
+}
