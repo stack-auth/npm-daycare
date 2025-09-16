@@ -2,7 +2,7 @@ storage: /verdaccio/storage
 plugins: /verdaccio/plugins
 
 filters:
-  plugin-quarantine-filter:
+  plugin-daycare-filter:
     minAgeHours: 48
 
 # Minimal uplinks and packages to proxy everything

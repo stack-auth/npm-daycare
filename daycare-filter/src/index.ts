@@ -10,9 +10,9 @@ interface CustomConfig extends Config {
 }
 
 const HOUR_MS = 1000 * 60 * 60;
-const DEFAULT_MIN_AGE_HOURS = 48;
+const DEFAULT_MIN_AGE_HOURS = 48; // 2 days
 
-export default class QuarantineFilter implements IPluginStorageFilter<CustomConfig> {
+export default class DaycareFilter implements IPluginStorageFilter<CustomConfig> {
   private readonly minAgeHours: number;
   private readonly logger: Logger;
 
@@ -116,7 +116,6 @@ export default class QuarantineFilter implements IPluginStorageFilter<CustomConf
     return result;
   }
 
-  // Storage filter - this is where the actual filtering happens
   filter_metadata(packageInfo: Readonly<Package>): Promise<Package> {
     this.logger.debug(`Storage filter for ${packageInfo.name}`);
     const filtered = this.filterPackageMetadata(packageInfo as Package);

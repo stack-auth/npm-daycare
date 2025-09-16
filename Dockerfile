@@ -1,7 +1,7 @@
 FROM node:20-alpine AS builder
-WORKDIR /app/quarantine-filter
+WORKDIR /app/daycare-filter
 
-COPY quarantine-filter/ ./
+COPY daycare-filter/ ./
 RUN npm install
 
 # Compile TypeScript to dist using a known TypeScript version
@@ -12,8 +12,8 @@ FROM verdaccio/verdaccio:nightly-master
 USER root
 
 # Copy compiled plugin into Verdaccio plugins directory
-COPY --from=builder /app/quarantine-filter /verdaccio/plugins/verdaccio-plugin-quarantine-filter
-RUN chown -R $VERDACCIO_USER_UID:root /verdaccio/plugins/verdaccio-plugin-quarantine-filter
+COPY --from=builder /app/daycare-filter /verdaccio/plugins/verdaccio-plugin-daycare-filter
+RUN chown -R $VERDACCIO_USER_UID:root /verdaccio/plugins/verdaccio-plugin-daycare-filter
 
 # Provide Verdaccio config that enables the filter plugin
 COPY config.yaml /verdaccio/conf/config.yaml
