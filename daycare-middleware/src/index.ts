@@ -7,12 +7,9 @@ import type {
 import { Request, Response, NextFunction } from 'express';
 
 interface CustomConfig extends Config {
-  minWeeklyDownloads?: number;
-  allowlistPackages?: string[];
-  allowManualOverride?: boolean;
+  minWeeklyDownloads: number;
 }
 
-const DEFAULT_MIN_WEEKLY_DOWNLOADS = 1000;
 
 export default class DaycareMiddleware implements IPluginMiddleware<CustomConfig> {
   private readonly minWeeklyDownloads: number;
@@ -23,10 +20,11 @@ export default class DaycareMiddleware implements IPluginMiddleware<CustomConfig
   private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache
 
   constructor(config: CustomConfig, options: { logger: Logger }) {
-    this.minWeeklyDownloads = config.minWeeklyDownloads ?? DEFAULT_MIN_WEEKLY_DOWNLOADS;
-    this.allowlistPackages = new Set(config.allowlistPackages || []);
-    this.allowManualOverride = config.allowManualOverride ?? true;
+    this.minWeeklyDownloads = process.env.MIN_WEEKLY_DOWNLOADS ? parseInt(process.env.MIN_WEEKLY_DOWNLOADS) : config.minWeeklyDownloads;
+    this.allowlistPackages = new Set();
+    this.allowManualOverride = true;
     this.logger = options.logger;
+    this.logger.info(`starting daycare middleware with minWeeklyDownloads: ${this.minWeeklyDownloads}`);
   }
 
   private async getWeeklyDownloads(packageName: string): Promise<number> {

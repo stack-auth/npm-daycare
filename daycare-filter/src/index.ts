@@ -6,19 +6,19 @@ import type {
 } from '@verdaccio/types';
 
 interface CustomConfig extends Config {
-  minAgeHours?: number;
+  minAgeHours: number;
 }
 
 const HOUR_MS = 1000 * 60 * 60;
-const DEFAULT_MIN_AGE_HOURS = 48; // 2 days
 
 export default class DaycareFilter implements IPluginStorageFilter<CustomConfig> {
   private readonly minAgeHours: number;
   private readonly logger: Logger;
 
   constructor(config: CustomConfig, options: { logger: Logger }) {
-    this.minAgeHours = config.minAgeHours ?? DEFAULT_MIN_AGE_HOURS;
+    this.minAgeHours = process.env.MIN_AGE_HOURS ? parseInt(process.env.MIN_AGE_HOURS) : config.minAgeHours;
     this.logger = options.logger;
+    this.logger.info(`starting daycare filter with minAgeHours: ${this.minAgeHours}`);
   }
 
   private filterPackageMetadata(packageInfo: Package): Package {
