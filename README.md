@@ -6,7 +6,7 @@ A daycare for npm's freshest arrivals.
 
 ---
 
-## Quickest quick start
+## Quickest quick start ⚡️
 
 ```bash
 docker run -d --rm --name npm-daycare -p 4873:4873 bgodil/npm-daycare
@@ -21,7 +21,7 @@ That bootstraps the default policies immediately. Tweak `MIN_WEEKLY_DOWNLOADS` a
 
 ---
 
-## Why npm-daycare exists
+## Why npm-daycare exists 🛡️
 
 Public registries move fast and automated pipelines install new versions seconds after release. Attackers know this and repeatedly target JavaScript ecosystems. Some recent examples:
 
@@ -34,14 +34,14 @@ Public registries move fast and automated pipelines install new versions seconds
 
 `npm-daycare` is an answer to those incidents: It slows down risky packages, and lets you keep building while new releases bake in public.
 
-## What npm-daycare does
+## What npm-daycare does 🧩
 
 - **Age gate** – `daycare-filter` rejects package versions younger than a configurable number of hours so your CI never installs a just-published release.
 - **Download reputation** – `daycare-middleware` checks the npm download API and blocks packages falling below the weekly download floor you set.
 - **Verdaccio-native** – both plugins slot into Verdaccio, so you get a familiar proxy cache, upstream auth, and local publishing workflow.
 - **Zero-touch for developers** – once the registry URL changes, existing tooling (npm, pnpm, Yarn, Bun) works without extra configuration.
 
-## Getting started
+## Getting started 🚀
 
 ### 1. Build & run the proxy
 
@@ -85,7 +85,7 @@ npm whoami --registry http://localhost:4873/ # should hit Verdaccio
 npm view <package> --registry http://localhost:4873/ # confirms package visibility
 ```
 
-## Defense-in-depth beyond npm-daycare
+## Defense-in-depth beyond npm-daycare 🏰
 
 npm-daycare is one layer. Combine it with the controls below for a resilient supply chain:
 
@@ -97,7 +97,7 @@ npm-daycare is one layer. Combine it with the controls below for a resilient sup
 6. **Pin transitive dependencies** – leverage tools like npm overrides or pnpm `packageExtensions` to override suspect ranges quickly.
 7. **Track upstream advisories** – subscribe to npm security advisories, GitHub Security Advisories, and vendor reports for early warnings.
 
-## Development
+## Development 💻
 
 This repository ships two Verdaccio plugins located in `daycare-filter` and `daycare-middleware`.
 
