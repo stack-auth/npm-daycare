@@ -9,22 +9,20 @@ middlewares:
   plugin-daycare-middleware:
     minWeeklyDownloads: 5000
 
+auth:
+  htpasswd:
+    file: ./htpasswd
+    max_users: -1   # disable user signups completely
+
 # Minimal uplinks and packages to proxy everything
 uplinks:
   npmjs:
     url: https://registry.npmjs.org/
 
 packages:
-  '@*/*':
-    access: $all
-    publish: $authenticated
-    proxy: npmjs
   '**':
-    access: $all
-    publish: $authenticated
-    proxy: npmjs
-
-# server:
-#   keepAliveTimeout: 60
+    access: $all     # allow everyone to fetch packages
+    publish: none    # nobody can publish
+    proxy: npmjs     # forward missing packages to npmjs
 
 listen: 0.0.0.0:4873
