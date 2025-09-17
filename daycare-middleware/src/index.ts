@@ -214,8 +214,18 @@ export default class DaycareMiddleware implements IPluginMiddleware<CustomConfig
         return true;
       }
 
-      // For age checking, we'd need package metadata here
-      // This is a simplified version - you could enhance it by fetching metadata
+      // Enforce age gate using upstream metadata publish time
+      const upstream = await this.fetchPackageMetadata(packageName);
+      const publishTime = upstream?.time?.[version];
+      if (publishTime) {
+        if (!this.isVersionOldEnough(publishTime)) {
+          this.logger.info(`Blocking ${packageName}@${version}: too new (published: ${publishTime}, minAgeHours: ${this.minAgeHours})`);
+          return true;
+        }
+      } else {
+        this.logger.debug(`No publish time found for ${packageName}@${version}; proceeding without age block`);
+      }
+
       this.logger.debug(`Allowing tarball ${packageName}@${version} (${weeklyDownloads} weekly downloads)`);
       return false;
     } catch (error) {
