@@ -3,6 +3,7 @@ plugins: /verdaccio/plugins
 
 filters:
   plugin-daycare-filter:
+    minWeeklyDownloads: 5000
     minAgeHours: 48
 
 middlewares:
