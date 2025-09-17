@@ -49,7 +49,7 @@ Public registries move fast and automated pipelines install new versions seconds
 # Build the image
 docker build -t npm-daycare ./
 
-# Run with sane defaults (72h age minimum, 10k weekly downloads)
+# Run with sane defaults (48h age minimum, 5k weekly downloads)
 docker run --rm -p 4873:4873 --name npm-proxy npm-daycare
 ```
 
