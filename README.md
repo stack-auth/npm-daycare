@@ -1,8 +1,6 @@
 # npm-daycare
 
-A daycare for npm's freshest arrivals.
-
-`npm-daycare` is an npm proxy that filters out all packages with fewer than X downloads, and only returns versions that are older than Y days.
+An npm registry proxy that doesn't include package versions released in the last 48h or packages with fewer than 5,000 downloads.
 
 ---
 
