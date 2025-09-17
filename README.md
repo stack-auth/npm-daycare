@@ -78,17 +78,13 @@ npm whoami --registry http://localhost:4873/ # should hit Verdaccio
 npm view <package> --registry http://localhost:4873/ # confirms package visibility
 ```
 
-## Defense-in-depth beyond npm-daycare 🏰
+## Caveats
 
-npm-daycare is one layer. Combine it with the controls below for a resilient supply chain:
+npm-daycare should not be your only layer of defense. An npm package is a piece of software that you run on your computer, and you should treat it as such.
 
-1. **Require maintainer verification** – enforce organization SSO, hardware keys, and npm 2FA for internal publishers.
-2. **Lock dependency graphs** – commit `package-lock.json`/`pnpm-lock.yaml`/`yarn.lock` and review lockfile diffs in PRs.
-3. **Mirror critical packages** – host vetted versions in an internal artifact repository so only curated builds reach production.
-4. **Scan continuously** – run secret scanners, SCA tools, and verify npm package integrity hashes before promotion.
-5. **Use sandboxed builds** – run CI in isolated workers with minimal secrets; short-lived tokens limit damage if a workflow is planted (as seen in Shai-Hulud).
-6. **Pin transitive dependencies** – leverage tools like npm overrides or pnpm `packageExtensions` to override suspect ranges quickly.
-7. **Track upstream advisories** – subscribe to npm security advisories, GitHub Security Advisories, and vendor reports for early warnings.
+The tag handling logic is currently not very robust; if a tag's version is too new, the tag will not be returned, even if it previously had a version that was old enough. For the `latest` tag, there is a workaround which just returns the latest available version.
+
+Private packages are currently not supported. There is currently no authentication, so don't host the proxy in a public place.
 
 ## Development 💻
 
