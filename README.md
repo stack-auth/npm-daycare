@@ -9,7 +9,7 @@ A daycare for npm's freshest arrivals.
 ## Quickest quick start ⚡️
 
 ```bash
-docker run -d --rm --name npm-daycare -p 4873:4873 bgodil/npm-daycare
+docker run --pull=always --rm --name npm-daycare -p 4873:4873 bgodil/npm-daycare
 
 npm set registry http://localhost:4873/
 pnpm config set registry http://localhost:4873/
@@ -49,7 +49,7 @@ Public registries move fast and automated pipelines install new versions seconds
 ### 1. Run the proxy
 
 ```bash
-docker run --rm -p 4873:4873 \
+docker run --pull=always --rm -p 4873:4873 \
   -e MIN_AGE_HOURS=48 \
   -e MIN_WEEKLY_DOWNLOADS=10000 \
   --name npm-proxy bgodil/npm-daycare
