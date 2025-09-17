@@ -1,3 +1,5 @@
+import * as semver from "semver";
+
 import type {
   IPluginStorageFilter,
   Package,
@@ -80,13 +82,9 @@ export default class DaycareFilter implements IPluginStorageFilter<CustomConfig>
     // If latest tag was filtered out, set it to the newest allowed version
     if (distTags?.latest && !filteredDistTags.latest && allowedVersionsList.length > 0) {
       // Sort versions by publish time (newest first)
-      const sortedVersions = allowedVersionsList.sort((a, b) => {
-        const aTime = new Date(time[a]).getTime();
-        const bTime = new Date(time[b]).getTime();
-        return bTime - aTime;
-      });
-      filteredDistTags.latest = sortedVersions[0];
-      this.logger.info(`Set latest tag to ${sortedVersions[0]} (newest allowed version)`);
+      const sortedVersions = semver.sort(allowedVersionsList);
+      filteredDistTags.latest = sortedVersions[sortedVersions.length - 1];
+      this.logger.info(`Set latest tag to ${sortedVersions[sortedVersions.length - 1]} (newest allowed version)`);
     }
 
     // Also filter the time object to match allowed versions

@@ -1,3 +1,5 @@
+import * as semver from "semver";
+
 import type { 
   IPluginMiddleware,
   Config,
@@ -8,32 +10,27 @@ import { Request, Response, NextFunction } from 'express';
 
 interface CustomConfig extends Config {
   minWeeklyDownloads: number;
+  minAgeHours: number;
 }
 
 
 export default class DaycareMiddleware implements IPluginMiddleware<CustomConfig> {
   private readonly minWeeklyDownloads: number;
+  private readonly minAgeHours: number;
   private readonly allowlistPackages: Set<string>;
   private readonly allowManualOverride: boolean;
   private readonly logger: Logger;
-  private downloadCache: Map<string, { downloads: number, timestamp: number }> = new Map();
-  private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache
 
   constructor(config: CustomConfig, options: { logger: Logger }) {
     this.minWeeklyDownloads = process.env.MIN_WEEKLY_DOWNLOADS ? parseInt(process.env.MIN_WEEKLY_DOWNLOADS) : config.minWeeklyDownloads;
+    this.minAgeHours = process.env.MIN_AGE_HOURS ? parseInt(process.env.MIN_AGE_HOURS) : config.minAgeHours;
     this.allowlistPackages = new Set();
     this.allowManualOverride = true;
     this.logger = options.logger;
-    this.logger.info(`starting daycare middleware with minWeeklyDownloads: ${this.minWeeklyDownloads}`);
+    this.logger.info(`starting daycare middleware with minWeeklyDownloads: ${this.minWeeklyDownloads} and minAgeHours: ${this.minAgeHours}`);
   }
 
   private async getWeeklyDownloads(packageName: string): Promise<number> {
-    // Check cache first
-    const cached = this.downloadCache.get(packageName);
-    if (cached && Date.now() - cached.timestamp < this.CACHE_TTL) {
-      return cached.downloads;
-    }
-
     try {
       // Use npm registry API to get download stats
       const url = `https://api.npmjs.org/downloads/point/last-week/${encodeURIComponent(packageName)}`;
@@ -50,18 +47,135 @@ export default class DaycareMiddleware implements IPluginMiddleware<CustomConfig
       const data = await response.json();
       const downloads = data.downloads || 0;
       
-      // Cache the result
-      this.downloadCache.set(packageName, {
-        downloads,
-        timestamp: Date.now()
-      });
-      
       this.logger.debug(`${packageName}: ${downloads} weekly downloads`);
       return downloads;
     } catch (error) {
-      this.logger.warn(`Failed to get download stats for ${packageName}:`, error as string);
+      this.logger.warn(`Failed to get download stats for ${packageName}: ${String(error)}`);
       // On error, assume it meets the threshold to avoid blocking legitimate packages
       return this.minWeeklyDownloads;
+    }
+  }
+
+  
+
+  private isVersionOldEnough(publishTimeIso: string): boolean {
+    if (!publishTimeIso) return false;
+    const HOUR_MS = 1000 * 60 * 60;
+    const now = Date.now();
+    const publishedAt = new Date(publishTimeIso).getTime();
+    const ageHours = (now - publishedAt) / HOUR_MS;
+    return ageHours > this.minAgeHours;
+  }
+
+  private filterPackageMetadata(packageInfo: any): any {
+    const { versions, time, 'dist-tags': distTags } = packageInfo || {};
+    if (!time || !versions) {
+      return packageInfo;
+    }
+
+    const allowedVersions: Record<string, any> = {};
+    const allowedVersionsList: string[] = [];
+
+    Object.keys(versions).forEach(version => {
+      const publishTime = time[version];
+      if (!publishTime) return;
+      if (this.isVersionOldEnough(publishTime)) {
+        allowedVersions[version] = versions[version];
+        allowedVersionsList.push(version);
+      }
+    });
+
+    // Filter dist-tags to only include allowed versions
+    const filteredDistTags: Record<string, string> = {};
+    if (distTags) {
+      Object.entries(distTags as Record<string, string>).forEach(([tag, version]) => {
+        const versionString = version as string;
+        if (allowedVersionsList.includes(versionString)) {
+          filteredDistTags[tag] = versionString;
+        }
+      });
+    }
+
+    // If no allowed versions, return minimal package structure
+    if (allowedVersionsList.length === 0) {
+      return {
+        ...packageInfo,
+        versions: {},
+        'dist-tags': {},
+        time: time && {
+          created: time.created,
+          modified: time.modified,
+        }
+      };
+    }
+
+    // If latest tag was filtered out, set it to the newest allowed version
+    if (distTags?.latest && !filteredDistTags.latest && allowedVersionsList.length > 0) {
+      // Sort versions by publish time (newest first)
+      const sortedVersions = semver.sort(allowedVersionsList);
+      filteredDistTags.latest = sortedVersions[sortedVersions.length - 1];
+      this.logger.info(`Set latest tag to ${sortedVersions[sortedVersions.length - 1]} (newest allowed version)`);
+    }
+
+    // Filter the time object to match allowed versions (and keep created/modified)
+    const filteredTime: Record<string, string> = {};
+    if (time) {
+      if (time.created) filteredTime.created = time.created;
+      if (time.modified) filteredTime.modified = time.modified;
+      allowedVersionsList.forEach(version => {
+        if (time[version]) filteredTime[version] = time[version];
+      });
+    }
+
+    return {
+      ...packageInfo,
+      versions: allowedVersions,
+      'dist-tags': filteredDistTags,
+      time: filteredTime,
+    };
+  }
+
+  private async fetchPackageMetadata(packageName: string): Promise<any | null> {
+    try {
+      const url = `https://registry.npmjs.org/${encodeURIComponent(packageName)}`;
+      const response = await fetch(url);
+      if (!response.ok) {
+        this.logger.debug(`Upstream metadata fetch failed for ${packageName} (HTTP ${response.status})`);
+        return null;
+      }
+      return await response.json();
+    } catch (error) {
+      this.logger.warn(`Failed to fetch metadata for ${packageName}: ${String(error)}`);
+      return null;
+    }
+  }
+
+  private async handleMetadataRequest(packageName: string, res: Response, next: NextFunction): Promise<void> {
+    try {
+      // Allow manual override / explicit allowlist
+      if (this.isPackageAllowlisted(packageName)) {
+        this.logger.debug(`Allowlisted metadata passthrough for ${packageName}`);
+        return next();
+      }
+
+      const weeklyDownloads = await this.getWeeklyDownloads(packageName);
+      if (weeklyDownloads < this.minWeeklyDownloads) {
+        this.logger.info(`Blocking metadata for ${packageName}: ${weeklyDownloads} weekly downloads (min: ${this.minWeeklyDownloads})`);
+        res.status(200).json({ name: packageName, versions: {}, 'dist-tags': {} });
+        return;
+      }
+
+      const upstream = await this.fetchPackageMetadata(packageName);
+      if (!upstream) {
+        // Fall back to Verdaccio's normal handling
+        return next();
+      }
+
+      const filtered = this.filterPackageMetadata(upstream);
+      res.status(200).json(filtered);
+    } catch (error) {
+      this.logger.error(`Error handling metadata for ${packageName}: ${String(error)}`);
+      return next();
     }
   }
 
@@ -105,7 +219,7 @@ export default class DaycareMiddleware implements IPluginMiddleware<CustomConfig
       this.logger.debug(`Allowing tarball ${packageName}@${version} (${weeklyDownloads} weekly downloads)`);
       return false;
     } catch (error) {
-      this.logger.error(`Error checking version ${packageName}@${version}:`, error as string);
+      this.logger.error(`Error checking version ${packageName}@${version}: ${String(error)}`);
       return false; // Don't block on error
     }
   }
@@ -164,17 +278,17 @@ export default class DaycareMiddleware implements IPluginMiddleware<CustomConfig
       next();
     });
 
-    // Optional: Log all package requests for debugging
-    app.get('/:package', (req: Request, res: Response, next: NextFunction) => {
+    // Intercept and filter metadata responses
+    app.get('/:package', async (req: Request, res: Response, next: NextFunction) => {
       const packageName = req.params.package;
       this.logger.debug(`Metadata request for: ${packageName}`);
-      next();
+      await this.handleMetadataRequest(packageName, res, next);
     });
 
-    app.get('/:scope/:package', (req: Request, res: Response, next: NextFunction) => {
+    app.get('/:scope/:package', async (req: Request, res: Response, next: NextFunction) => {
       const packageName = `${req.params.scope}/${req.params.package}`;
       this.logger.debug(`Scoped metadata request for: ${packageName}`);
-      next();
+      await this.handleMetadataRequest(packageName, res, next);
     });
   }
 }

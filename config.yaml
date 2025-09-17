@@ -9,6 +9,7 @@ filters:
 middlewares:
   plugin-daycare-middleware:
     minWeeklyDownloads: 5000
+    minAgeHours: 48
 
 auth:
   htpasswd:

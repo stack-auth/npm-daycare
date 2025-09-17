@@ -6,12 +6,16 @@
     "build": "tsc"
   },
   "devDependencies": {
+    "@types/express": "^5.0.3",
     "@types/node": "^24.3.0",
     "@verdaccio/types": "^10.8.0",
-    "typescript": "^5.3.3",
-    "@types/express": "^5.0.3"
+    "typescript": "^5.3.3"
   },
   "author": "",
   "license": "ISC",
-  "description": ""
+  "description": "",
+  "dependencies": {
+    "@types/semver": "^7.7.1",
+    "semver": "^7.7.2"
+  }
 }
