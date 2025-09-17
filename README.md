@@ -15,6 +15,9 @@ npm set registry http://localhost:4873/
 pnpm config set registry http://localhost:4873/
 yarn config set registry http://localhost:4873/
 bun config set registry http://localhost:4873/
+
+npm view @types/node  # has recent updates
+npm view pgmock  # has <5,000 weekly downloads
 ```
 
 That bootstraps the default policies immediately. Tweak `MIN_WEEKLY_DOWNLOADS` and `MIN_AGE_HOURS` if you need different X/Y thresholds.
@@ -43,28 +46,18 @@ Public registries move fast and automated pipelines install new versions seconds
 
 ## Getting started 🚀
 
-### 1. Build & run the proxy
-
-```bash
-# Build the image
-docker build -t npm-daycare ./
-
-# Run with sane defaults (48h age minimum, 5k weekly downloads)
-docker run --rm -p 4873:4873 --name npm-proxy npm-daycare
-```
-
-Use custom guard rails when you need stricter checks:
+### 1. Run the proxy
 
 ```bash
 docker run --rm -p 4873:4873 \
-  -e MIN_AGE_HOURS=72 \
+  -e MIN_AGE_HOURS=48 \
   -e MIN_WEEKLY_DOWNLOADS=10000 \
-  --name npm-proxy npm-daycare
+  --name npm-proxy bgodil/npm-daycare
 ```
 
 Environment variables
 
-- `MIN_AGE_HOURS` (default `72`) – minimum publish age before a version becomes installable.
+- `MIN_AGE_HOURS` (default `48`) – minimum publish age before a version becomes installable.
 - `MIN_WEEKLY_DOWNLOADS` (default `10000`) – minimum downloads in the last seven days.
 
 ### 2. Point your tooling at npm-daycare
@@ -105,3 +98,13 @@ This repository ships two Verdaccio plugins located in `daycare-filter` and `day
 - `daycare-middleware` hooks the tarball fetch pipeline, queries download statistics, and rejects packages that lack adoption.
 
 Install dependencies and run tests inside each plugin directory while contributing.
+
+To build & run the proxy from source:
+
+```bash
+# Build the image
+docker build -t npm-daycare ./
+
+# Run with sane defaults (48h age minimum, 5k weekly downloads)
+docker run --rm -p 4873:4873 --name npm-proxy npm-daycare
+```
